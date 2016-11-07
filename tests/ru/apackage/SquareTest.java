@@ -1,57 +1,84 @@
 package ru.apackage;
 
-import com.sun.javafx.binding.StringFormatter;
-import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import ru.socialquantum.testtasks.Square;
 import ru.socialquantum.testtasks.SquareFactory;
+
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import static org.junit.Assert.*;
 
+@RunWith(Parameterized.class)
 public class SquareTest {
-    private Square square = SquareFactory.newSquare(100.1);
-    private Square sameSquare = SquareFactory.newSquare(100.1);
-    private Square anotherSquare = SquareFactory.newSquare(100.01);
+    // создаем переменные, которые будут определены в конструкторе
+    private double actualSideLength; // длина стороны
+    private double anotherSideLength; // другая длина стороны
+    private double expectedSquare; // ожидаемая площадь
 
+    private Square square; // объкт square
+    private Square sameSquare; // объект sameSquare
+    private Square anotherSquare; // объект anotherSquare
+
+    final static double sideLengthMin = -100.0; // тут мы определяем значения для для итеративной проверки
     final static double sideLengthMax = 100.0;
-    final static double sideLengthStep = 5.3;
-    final static double delta = 1e-6;
+    final static double sideLengthStep = 1.0; // шаг
+    final static double delta = 1e-6; // дельта для дабла
 
-    @Test
+    @Parameters(name = "#{index}: side={0} another={1} square={2}") // параметризация junit, эти поля - placeholder для моего arrayList
+    public static Iterable<Double[]> testData() {
+        List<Double[]> data = new ArrayList<Double[]>(); // создаем ArrayList - data (переименуй меня)
+        for (double sideLength = sideLengthMin; sideLength <= sideLengthMax; sideLength += sideLengthStep) {//цикл в котором мы наполняем мой arrayList
+            data.add(new Double[] {sideLength, sideLength + 10, sideLength * sideLength}); // процесс наполенния
+        }
+        return data;
+    }
+
+    public SquareTest(double actualSideLength, double anotherSideLength, double expectedSquare) { // конструктор, 2-е условие параметризации
+        this.actualSideLength = actualSideLength; // присваем значения переменным
+        this.anotherSideLength = anotherSideLength;
+        this.expectedSquare = expectedSquare;
+
+        square = SquareFactory.newSquare(actualSideLength);
+        sameSquare = SquareFactory.newSquare(actualSideLength);
+        anotherSquare = SquareFactory.newSquare(anotherSideLength);
+    }
+
+    @Test  // проверка на отриц. длину стороны
+    public void testNegativeSideLength() { // можно ли создать сторону отрицательной длины
+        assertFalse(square.sideLength() < 0.0);
+    }
+
+    @Test // проверка на равенство стороны нулю
+    public void testNotNullSideLength() {
+        assertNotEquals(square.sideLength(), 0.0, delta);
+    }
+
+    @Test // сравниваем заданное значение стороны с возвращемым
     public void testSideLength() {
-        assertEquals(100.1, square.sideLength(), delta);
-    }
-    // в цикле проверяем возвращаемое значение мтода sideLength. Сравниваем исходоное с возвращенным.
-    @Test
-    public void testSideLengthRange() {
-        for (double sideLength = 0.0; sideLength < sideLengthMax; sideLength += sideLengthStep) {
-            Square s = SquareFactory.newSquare(sideLength);
-            assertEquals(sideLength, s.sideLength(), delta);
-        }
+        assertEquals(actualSideLength, square.sideLength(), delta);
     }
 
-    @Test
-    public void testSquare(){
-        assertEquals(10020.01, square.square(), delta);
-    }
-    // в цикле, проверяем на значениях в интрвале от 0 до 100, с шагом 5.3. Считаем площадь и сравниваем.
-    @Test
-    public void testSquareRange(){
-        for (double sideLength = 0.0; sideLength < sideLengthMax; sideLength += sideLengthStep) {
-            Square s = SquareFactory.newSquare(sideLength);
-            assertEquals(sideLength * sideLength, s.square(), delta);
-        }
-    }
-
-    @Test
-    public void testEqualsSquare(){
-        assertTrue(square.equalsSquare(sameSquare)); //  сравнение с таким же
-        assertEquals(square.square(), sameSquare.square(), delta);
-
+    @Test // сравение с другим
+    public void testEqualsSquareFalse(){
         assertFalse(square.equalsSquare(anotherSquare)); // сравение с другим
         assertNotEquals(square.square(), anotherSquare.square(), delta);
+    }
+
+    @Test // сравниваем площади
+    public void testSquare(){
+        assertEquals(expectedSquare, square.square(), delta);
+    }
+
+    @Test //  сравнение с таким же
+    public void testEqualsSquareTrue(){
+        assertTrue(square.equalsSquare(sameSquare));
+        assertEquals(square.square(), sameSquare.square(), delta);
     }
 }
